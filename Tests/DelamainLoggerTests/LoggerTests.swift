@@ -170,3 +170,20 @@ struct LoggerTests {
 }
 
 // MockDestination configured via init
+
+// MARK: - CI Verification Tests
+
+extension LoggerTests {
+    func testCIVerification() async {
+        // Simple test to verify CI pipeline runs tests
+        let logger = Logger()
+        XCTAssertNotNil(logger, "Logger should initialize")
+    }
+    
+    func testLogLevelsAreOrdered() {
+        // Verify log levels have correct ordering
+        XCTAssertTrue(LogLevel.debug.rawValue < LogLevel.info.rawValue)
+        XCTAssertTrue(LogLevel.info.rawValue < LogLevel.warning.rawValue)
+        XCTAssertTrue(LogLevel.warning.rawValue < LogLevel.error.rawValue)
+    }
+}
