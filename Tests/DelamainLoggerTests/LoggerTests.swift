@@ -178,7 +178,7 @@ struct CIVerificationTests {
     
     @Test("Logger initializes correctly")
     func loggerInitializes() async {
-        let logger = Logger()
+        let logger = Logger(subsystem: "com.test", category: "test")
         #expect(logger != nil)
     }
     
@@ -188,6 +188,6 @@ struct CIVerificationTests {
         #expect(LogLevel.debug.rawValue < LogLevel.info.rawValue)
         #expect(LogLevel.info.rawValue < LogLevel.warning.rawValue)
         #expect(LogLevel.warning.rawValue < LogLevel.error.rawValue)
-        #expect(LogLevel.error.rawValue < LogLevel.fault.rawValue)
+        #expect(LogLevel.error.rawValue < LogLevel.critical.rawValue)
     }
 }
