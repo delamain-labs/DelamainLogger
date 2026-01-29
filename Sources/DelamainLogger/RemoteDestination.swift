@@ -4,8 +4,8 @@ import Foundation
 public enum RemoteDestinationError: Error, Sendable {
     case invalidURL
     case requestFailed(statusCode: Int)
-    case networkError(Error)
-    case encodingError(Error)
+    case networkError(String)
+    case encodingError(String)
 }
 
 /// Configuration for retry behavior.
@@ -45,12 +45,14 @@ public actor RemoteDestination: LogDestination {
     public nonisolated let url: URL
     public nonisolated let batchSize: Int
     public nonisolated let flushInterval: TimeInterval
+    public nonisolated let maxBufferSize: Int
 
     private let headers: [String: String]
     private let retryConfig: RetryConfiguration
     private let session: URLSession
 
     private var buffer: [LogMessage] = []
+    private var droppedCount: Int = 0
     private var flushTask: Task<Void, Never>?
     private var isFlushTaskStarted: Bool = false
     private var lastFlush: Date = Date()
@@ -64,6 +66,7 @@ public actor RemoteDestination: LogDestination {
     ///   - minimumLevel: Minimum level to log (default: .info).
     ///   - batchSize: Number of messages to batch before sending (default: 50).
     ///   - flushInterval: Maximum seconds between flushes (default: 10).
+    ///   - maxBufferSize: Maximum buffer size before dropping old messages (default: 1000).
     ///   - headers: Custom HTTP headers (e.g., for authentication).
     ///   - retryConfig: Retry configuration for failed requests.
     ///   - session: URLSession to use (default: shared).
@@ -72,6 +75,7 @@ public actor RemoteDestination: LogDestination {
         minimumLevel: LogLevel = .info,
         batchSize: Int = 50,
         flushInterval: TimeInterval = 10.0,
+        maxBufferSize: Int = 1000,
         headers: [String: String] = [:],
         retryConfig: RetryConfiguration = .default,
         session: URLSession = .shared
@@ -80,6 +84,7 @@ public actor RemoteDestination: LogDestination {
         self.minimumLevel = minimumLevel
         self.batchSize = max(1, batchSize)
         self.flushInterval = max(1.0, flushInterval)
+        self.maxBufferSize = max(batchSize, maxBufferSize)
         self.headers = headers
         self.retryConfig = retryConfig
         self.session = session
@@ -94,6 +99,7 @@ public actor RemoteDestination: LogDestination {
         minimumLevel: LogLevel = .info,
         batchSize: Int = 50,
         flushInterval: TimeInterval = 10.0,
+        maxBufferSize: Int = 1000,
         headers: [String: String] = [:],
         retryConfig: RetryConfiguration = .default,
         session: URLSession = .shared
@@ -106,6 +112,7 @@ public actor RemoteDestination: LogDestination {
             minimumLevel: minimumLevel,
             batchSize: batchSize,
             flushInterval: flushInterval,
+            maxBufferSize: maxBufferSize,
             headers: headers,
             retryConfig: retryConfig,
             session: session
@@ -142,15 +149,26 @@ public actor RemoteDestination: LogDestination {
         do {
             try await send(messages)
         } catch {
-            // On failure, re-add messages to buffer (best effort)
-            // In production, you might want dead letter queue
+            // On failure, re-add messages to buffer with cap to prevent unbounded growth
             buffer.insert(contentsOf: messages, at: 0)
+
+            // Drop oldest messages if buffer exceeds max size
+            if buffer.count > maxBufferSize {
+                let toDrop = buffer.count - maxBufferSize
+                buffer.removeFirst(toDrop)
+                droppedCount += toDrop
+            }
         }
     }
 
     /// Returns the current number of buffered messages.
     public func bufferedCount() -> Int {
         buffer.count
+    }
+
+    /// Returns the number of messages dropped due to buffer overflow.
+    public func droppedMessageCount() -> Int {
+        droppedCount
     }
 
     /// Closes the destination, flushing remaining messages.
@@ -184,7 +202,7 @@ public actor RemoteDestination: LogDestination {
         do {
             data = try encoder.encode(payload)
         } catch {
-            throw RemoteDestinationError.encodingError(error)
+            throw RemoteDestinationError.encodingError(error.localizedDescription)
         }
 
         var request = URLRequest(url: url)
@@ -219,7 +237,7 @@ public actor RemoteDestination: LogDestination {
                 if error is RemoteDestinationError {
                     throw error
                 }
-                lastError = RemoteDestinationError.networkError(error)
+                lastError = RemoteDestinationError.networkError(error.localizedDescription)
             }
 
             attempt += 1
@@ -261,6 +279,11 @@ private struct LogPayload: Encodable {
         self.function = logMessage.function
         self.line = logMessage.line
 
-        self.metadata = logMessage.metadata
+        // Convert LogMetadata to simple strings for JSON
+        if let meta = logMessage.metadata {
+            self.metadata = meta.mapValues { $0.description }
+        } else {
+            self.metadata = nil
+        }
     }
 }
