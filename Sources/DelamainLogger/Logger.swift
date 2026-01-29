@@ -39,6 +39,9 @@ public actor Logger {
     /// Registered log destinations.
     private var destinations: [any LogDestination] = []
 
+    /// Global filter applied before destination filters.
+    private var globalFilter: (any LogFilter)?
+
     /// Creates a new logger.
     /// - Parameters:
     ///   - subsystem: The subsystem identifier.
@@ -65,6 +68,12 @@ public actor Logger {
     /// - Parameter enabled: Whether logging should be enabled.
     public func setEnabled(_ enabled: Bool) {
         isEnabled = enabled
+    }
+
+    /// Sets a global filter applied to all log messages before destination filters.
+    /// - Parameter filter: The filter to apply, or nil to remove filtering.
+    public func setFilter(_ filter: (any LogFilter)?) {
+        globalFilter = filter
     }
 
     // MARK: - Logging Methods
@@ -157,8 +166,13 @@ public actor Logger {
             line: line
         )
 
+        // Apply global filter first
+        if let globalFilter, !globalFilter.shouldLog(logMessage) {
+            return
+        }
+
         for destination in destinations {
-            if await destination.shouldLog(level: level) {
+            if await destination.shouldLog(message: logMessage) {
                 await destination.log(logMessage)
             }
         }
