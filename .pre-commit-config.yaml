@@ -1,0 +1,21 @@
+# Pre-commit hooks for Swift projects
+# Install: brew install pre-commit && pre-commit install
+
+repos:
+  # SwiftLint
+  - repo: https://github.com/realm/SwiftLint
+    rev: 0.57.0
+    hooks:
+      - id: swiftlint
+        args: [--strict, --config, .swiftlint.yml]
+
+  # Basic file hygiene
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+        args: [--maxkb=500]
