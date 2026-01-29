@@ -170,3 +170,24 @@ struct LoggerTests {
 }
 
 // MockDestination configured via init
+
+// MARK: - CI Verification Tests
+
+@Suite("CI Verification Tests")
+struct CIVerificationTests {
+    
+    @Test("Logger initializes correctly")
+    func loggerInitializes() async {
+        let logger = Logger(subsystem: "com.test", category: "test")
+        #expect(logger != nil)
+    }
+    
+    @Test("Log levels are ordered correctly")
+    func logLevelsAreOrdered() {
+        #expect(LogLevel.trace.rawValue < LogLevel.debug.rawValue)
+        #expect(LogLevel.debug.rawValue < LogLevel.info.rawValue)
+        #expect(LogLevel.info.rawValue < LogLevel.warning.rawValue)
+        #expect(LogLevel.warning.rawValue < LogLevel.error.rawValue)
+        #expect(LogLevel.error.rawValue < LogLevel.critical.rawValue)
+    }
+}
