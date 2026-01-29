@@ -17,9 +17,9 @@ public actor ConsoleDestination: LogDestination {
     public nonisolated let minimumLevel: LogLevel
     public nonisolated let format: ConsoleFormat
     public nonisolated let useColors: Bool
-    
+
     private let dateFormatter: ISO8601DateFormatter
-    
+
     /// Creates a console destination.
     /// - Parameters:
     ///   - minimumLevel: Minimum level to log (default: .trace).
@@ -36,10 +36,10 @@ public actor ConsoleDestination: LogDestination {
         self.dateFormatter = ISO8601DateFormatter()
         dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
     }
-    
+
     public func log(_ message: LogMessage) async {
         let formatted = await format(message)
-        
+
         // Error and above go to stderr
         if message.level >= .error {
             fputs(formatted + "\n", stderr)
@@ -47,7 +47,7 @@ public actor ConsoleDestination: LogDestination {
             print(formatted)
         }
     }
-    
+
     /// Formats a log message according to the configured format.
     /// - Parameter message: The message to format.
     /// - Returns: The formatted string.
@@ -63,43 +63,47 @@ public actor ConsoleDestination: LogDestination {
             return formatJSON(message)
         }
     }
-    
+
     // MARK: - Format Implementations
-    
+
     private func formatCompact(_ message: LogMessage) -> String {
         let level = colorize(message.level.description, for: message.level)
         return "[\(level)] \(message.message)"
     }
-    
+
     private func formatStandard(_ message: LogMessage) -> String {
         let timestamp = dateFormatter.string(from: message.timestamp)
-        let level = colorize(message.level.description.padding(toLength: 8, withPad: " ", startingAt: 0), for: message.level)
+        let level = colorize(
+            message.level.description.padding(toLength: 8, withPad: " ", startingAt: 0),
+            for: message.level
+        )
         var result = "\(timestamp) [\(level)] [\(message.source)] \(message.message)"
-        
-        if let metadata = message.metadata, !metadata.isEmpty {
-            let metaStr = metadata.map { "\($0.key)=\($0.value)" }.joined(separator: ", ")
+
+        if let metaStr = message.formattedMetadata() {
             result += " {\(metaStr)}"
         }
-        
+
         return result
     }
-    
+
     private func formatVerbose(_ message: LogMessage) -> String {
         let timestamp = dateFormatter.string(from: message.timestamp)
-        let level = colorize(message.level.description.padding(toLength: 8, withPad: " ", startingAt: 0), for: message.level)
+        let level = colorize(
+            message.level.description.padding(toLength: 8, withPad: " ", startingAt: 0),
+            for: message.level
+        )
         let filename = URL(fileURLWithPath: message.file).lastPathComponent
-        
+
         var result = "\(timestamp) [\(level)] [\(message.source)] \(message.message)"
         result += " @ \(filename):\(message.line) \(message.function)"
-        
-        if let metadata = message.metadata, !metadata.isEmpty {
-            let metaStr = metadata.map { "\($0.key)=\($0.value)" }.joined(separator: ", ")
+
+        if let metaStr = message.formattedMetadata() {
             result += " {\(metaStr)}"
         }
-        
+
         return result
     }
-    
+
     private func formatJSON(_ message: LogMessage) -> String {
         var dict: [String: Any] = [
             "timestamp": dateFormatter.string(from: message.timestamp),
@@ -110,37 +114,50 @@ public actor ConsoleDestination: LogDestination {
             "function": message.function,
             "line": message.line
         ]
-        
+
         if let metadata = message.metadata {
-            dict["metadata"] = metadata
+            dict["metadata"] = metadata.mapValues { $0.jsonValue }
         }
-        
-        // Manual JSON encoding to avoid Foundation's JSONSerialization issues with Any
+
         return serializeJSON(dict)
     }
-    
+
     private func serializeJSON(_ dict: [String: Any]) -> String {
         var parts: [String] = []
-        
+
         for (key, value) in dict.sorted(by: { $0.key < $1.key }) {
-            let valueStr: String
-            switch value {
-            case let string as String:
-                valueStr = "\"\(escapeJSON(string))\""
-            case let int as Int:
-                valueStr = "\(int)"
-            case let dict as [String: String]:
-                let inner = dict.map { "\"\($0.key)\":\"\(escapeJSON($0.value))\"" }.joined(separator: ",")
-                valueStr = "{\(inner)}"
-            default:
-                valueStr = "\"\(value)\""
-            }
+            let valueStr = serializeJSONValue(value)
             parts.append("\"\(key)\":\(valueStr)")
         }
-        
+
         return "{\(parts.joined(separator: ","))}"
     }
-    
+
+    private func serializeJSONValue(_ value: Any) -> String {
+        switch value {
+        case let string as String:
+            return "\"\(escapeJSON(string))\""
+        case let int as Int:
+            return "\(int)"
+        case let double as Double:
+            return "\(double)"
+        case let bool as Bool:
+            return bool ? "true" : "false"
+        case is NSNull:
+            return "null"
+        case let dict as [String: Any]:
+            let inner = dict.sorted { $0.key < $1.key }.map { k, v in
+                "\"\(k)\":\(serializeJSONValue(v))"
+            }.joined(separator: ",")
+            return "{\(inner)}"
+        case let arr as [Any]:
+            let inner = arr.map { serializeJSONValue($0) }.joined(separator: ",")
+            return "[\(inner)]"
+        default:
+            return "\"\(value)\""
+        }
+    }
+
     private func escapeJSON(_ string: String) -> String {
         string
             .replacingOccurrences(of: "\\", with: "\\\\")
@@ -149,12 +166,12 @@ public actor ConsoleDestination: LogDestination {
             .replacingOccurrences(of: "\r", with: "\\r")
             .replacingOccurrences(of: "\t", with: "\\t")
     }
-    
+
     // MARK: - Colors
-    
+
     private func colorize(_ text: String, for level: LogLevel) -> String {
         guard useColors else { return text }
-        
+
         let colorCode: String
         switch level {
         case .trace: colorCode = "37" // White
@@ -164,7 +181,7 @@ public actor ConsoleDestination: LogDestination {
         case .error: colorCode = "31" // Red
         case .critical: colorCode = "35;1" // Magenta bold
         }
-        
+
         return "\u{001B}[\(colorCode)m\(text)\u{001B}[0m"
     }
 }

@@ -73,13 +73,31 @@ struct LoggerTests {
         let destination = MockDestination()
         let logger = Logger(subsystem: "test", category: "unit")
         await logger.addDestination(destination)
-        
+
         await logger.info("With metadata", metadata: ["userId": "123", "action": "login"])
-        
+
         let messages = await destination.getMessages()
         #expect(messages.count == 1)
-        #expect(messages[0].metadata?["userId"] == "123")
-        #expect(messages[0].metadata?["action"] == "login")
+        #expect(messages[0].metadata?["userId"] == .string("123"))
+        #expect(messages[0].metadata?["action"] == .string("login"))
+    }
+
+    @Test("Logger supports rich metadata types")
+    func supportsRichMetadata() async {
+        let destination = MockDestination()
+        let logger = Logger(subsystem: "test", category: "unit")
+        await logger.addDestination(destination)
+
+        await logger.info("Rich metadata", metadata: [
+            "userId": 123,
+            "active": true,
+            "tags": ["swift", "async"]
+        ])
+
+        let messages = await destination.getMessages()
+        #expect(messages.count == 1)
+        #expect(messages[0].metadata?["userId"] == .int(123))
+        #expect(messages[0].metadata?["active"] == .bool(true))
     }
     
     @Test("Logger captures source location")
