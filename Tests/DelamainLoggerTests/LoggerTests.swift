@@ -173,17 +173,21 @@ struct LoggerTests {
 
 // MARK: - CI Verification Tests
 
-extension LoggerTests {
-    func testCIVerification() async {
-        // Simple test to verify CI pipeline runs tests
+@Suite("CI Verification Tests")
+struct CIVerificationTests {
+    
+    @Test("Logger initializes correctly")
+    func loggerInitializes() async {
         let logger = Logger()
-        XCTAssertNotNil(logger, "Logger should initialize")
+        #expect(logger != nil)
     }
     
-    func testLogLevelsAreOrdered() {
-        // Verify log levels have correct ordering
-        XCTAssertTrue(LogLevel.debug.rawValue < LogLevel.info.rawValue)
-        XCTAssertTrue(LogLevel.info.rawValue < LogLevel.warning.rawValue)
-        XCTAssertTrue(LogLevel.warning.rawValue < LogLevel.error.rawValue)
+    @Test("Log levels are ordered correctly")
+    func logLevelsAreOrdered() {
+        #expect(LogLevel.trace.rawValue < LogLevel.debug.rawValue)
+        #expect(LogLevel.debug.rawValue < LogLevel.info.rawValue)
+        #expect(LogLevel.info.rawValue < LogLevel.warning.rawValue)
+        #expect(LogLevel.warning.rawValue < LogLevel.error.rawValue)
+        #expect(LogLevel.error.rawValue < LogLevel.fault.rawValue)
     }
 }
