@@ -1,5 +1,5 @@
 /// Log severity levels in ascending order of importance.
-public enum LogLevel: Int, Comparable, Sendable, CustomStringConvertible {
+public enum LogLevel: Int, Comparable, Sendable, CustomStringConvertible, CaseIterable {
     case trace = 0
     case debug = 1
     case info = 2
