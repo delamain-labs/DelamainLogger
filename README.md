@@ -189,4 +189,5 @@ This package is part of the Delamain Swift ecosystem:
 
 - [DelamainCore](https://github.com/delamain-labs/DelamainCore) - Core utilities
 - [DelamainNetworking](https://github.com/delamain-labs/DelamainNetworking) - Async networking
-- **DelamainLogger** - Logging framework
+- **DelamainLogger** - Logging framework ← You are here
+- [DelamainStorage](https://github.com/delamain-labs/DelamainStorage) - Local data persistence (Coming Soon)

@@ -2,10 +2,25 @@
 
 This document outlines planned features and improvements for DelamainLogger.
 
+## ✅ v1.0.0 (Released)
+
+### Core Features
+- [x] Async/await native logging with actor isolation
+- [x] Thread-safe operations via Swift actors
+- [x] Log levels: trace, debug, info, warning, error, critical
+- [x] Structured logging with key-value metadata
+- [x] Swift 6 strict concurrency with full Sendable support
+
+### Destinations
+- [x] ConsoleDestination with colors and multiple formats
+- [x] FileDestination with rotation and backups
+- [x] OSLogDestination for Apple unified logging
+
+---
+
 ## v1.1.0 (Next)
 
 ### Enhancements
-- [ ] **Structured logging** — Key-value metadata support for machine-readable logs
 - [ ] **Log filtering** — Filter by level, category, or custom predicates
 - [ ] **Performance metrics** — Track logging overhead and throughput
 - [ ] **Batched file writes** — Reduce I/O with configurable batch sizes
@@ -30,8 +45,6 @@ This document outlines planned features and improvements for DelamainLogger.
 ## v2.0.0 (Long-term)
 
 ### Breaking Changes
-- [ ] **Swift 6 strict concurrency** — Full Sendable enforcement
-- [ ] **Minimum iOS 17** — Leverage newer OS features
 - [ ] **Macro-based logging** — Compile-time log level stripping
 
 ### Architecture
@@ -48,6 +61,7 @@ Want to help? Check our [issues](https://github.com/delamain-labs/DelamainLogger
 
 - [DelamainNetworking](https://github.com/delamain-labs/DelamainNetworking) — Async networking with retries
 - [DelamainCore](https://github.com/delamain-labs/DelamainCore) — Shared utilities and extensions
+- [DelamainStorage](https://github.com/delamain-labs/DelamainStorage) — Local data persistence (Coming Soon)
 
 ---
 
