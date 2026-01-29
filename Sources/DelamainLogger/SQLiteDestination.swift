@@ -200,8 +200,10 @@ public actor SQLiteDestination: LogDestination {
         return entries
     }
     
-    private func encodeMetadata(_ metadata: [String: String]) -> String? {
-        guard let data = try? JSONSerialization.data(withJSONObject: metadata),
+    private func encodeMetadata(_ metadata: LogMetadata) -> String? {
+        // Convert LogMetadata to simple string dictionary for storage
+        let stringDict = metadata.mapValues { $0.description }
+        guard let data = try? JSONSerialization.data(withJSONObject: stringDict),
               let string = String(data: data, encoding: .utf8) else {
             return nil
         }
