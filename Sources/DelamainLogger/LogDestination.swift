@@ -10,7 +10,7 @@ public protocol LogDestination: Actor {
     nonisolated var minimumLevel: LogLevel { get }
 
     /// Optional filter for this destination.
-    var filter: (any LogFilter)? { get }
+    nonisolated var filter: (any LogFilter)? { get }
 
     /// Outputs a log message to the destination.
     /// - Parameter message: The message to log.
@@ -29,7 +29,7 @@ public protocol LogDestination: Actor {
 
 /// Default implementation for shouldLog based on minimumLevel.
 public extension LogDestination {
-    var filter: (any LogFilter)? { nil }
+    nonisolated var filter: (any LogFilter)? { nil }
 
     func shouldLog(level: LogLevel) async -> Bool {
         level >= minimumLevel
