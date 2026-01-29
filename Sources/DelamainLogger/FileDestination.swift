@@ -17,6 +17,9 @@ public actor FileDestination: LogDestination {
     public nonisolated let maxFileSize: Int?
     public nonisolated let maxBackupCount: Int
 
+    /// Optional filter for this destination.
+    public let filter: (any LogFilter)?
+
     private var fileHandle: FileHandle?
     private var currentFileSize: Int = 0
     private let dateFormatter: ISO8601DateFormatter
@@ -28,18 +31,21 @@ public actor FileDestination: LogDestination {
     ///   - createDirectories: Whether to create parent directories if needed.
     ///   - maxFileSize: Maximum file size before rotation (nil = no rotation).
     ///   - maxBackupCount: Number of backup files to keep (default: 3).
+    ///   - filter: Optional filter for this destination.
     /// - Throws: `FileDestinationError` if the file cannot be created.
     public init(
         fileURL: URL,
         minimumLevel: LogLevel = .trace,
         createDirectories: Bool = false,
         maxFileSize: Int? = nil,
-        maxBackupCount: Int = 3
+        maxBackupCount: Int = 3,
+        filter: (any LogFilter)? = nil
     ) throws {
         self.fileURL = fileURL
         self.minimumLevel = minimumLevel
         self.maxFileSize = maxFileSize
         self.maxBackupCount = maxBackupCount
+        self.filter = filter
 
         self.dateFormatter = ISO8601DateFormatter()
         dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]

@@ -18,6 +18,9 @@ public actor ConsoleDestination: LogDestination {
     public nonisolated let format: ConsoleFormat
     public nonisolated let useColors: Bool
 
+    /// Optional filter for this destination.
+    public let filter: (any LogFilter)?
+
     private let dateFormatter: ISO8601DateFormatter
 
     /// Creates a console destination.
@@ -25,14 +28,17 @@ public actor ConsoleDestination: LogDestination {
     ///   - minimumLevel: Minimum level to log (default: .trace).
     ///   - format: Output format (default: .standard).
     ///   - useColors: Whether to use ANSI colors (default: false).
+    ///   - filter: Optional filter for this destination.
     public init(
         minimumLevel: LogLevel = .trace,
         format: ConsoleFormat = .standard,
-        useColors: Bool = false
+        useColors: Bool = false,
+        filter: (any LogFilter)? = nil
     ) {
         self.minimumLevel = minimumLevel
         self.format = format
         self.useColors = useColors
+        self.filter = filter
         self.dateFormatter = ISO8601DateFormatter()
         dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
     }
